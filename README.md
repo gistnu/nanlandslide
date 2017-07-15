@@ -6,7 +6,7 @@
  -
  
 # Website
-http://www3.cgistln.nu.ac.th/nanlandslide/
+http://www3.cgistln.nu.ac.th/nanlandslide/index.html
 
 # Screenshot
 ![screenshot](http://i.imgur.com/KmzRdoR.png "Webpage")
