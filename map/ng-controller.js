@@ -1,7 +1,20 @@
-angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
+angular.module('app.controller', ['ui-leaflet', 'ng-echarts', 'ngAnimate', 'ngSanitize', 'ui.bootstrap'])
 
-    .controller('mapCtrl', function ($scope) {
+    .controller('mapCtrl', function ($scope, geoService) {
 
+        var center = {
+            lat: 17.451,
+            lng: 100.570,
+            zoom: 7
+        };
+        $scope.goMap = function(lat,lon){
+          $scope.center = {
+              lat: Number(lat),
+              lng: Number(lon),
+              zoom: 15
+          }
+
+        };
         var radar_phs = {
             name: 'ข้อมูลเรดาร์ฝน: พิษณุโลก',
             type: 'wms',
@@ -18,7 +31,7 @@ angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
                 format: "image/png",
                 opacity: 1,
             },
-            group: "Open Fire Map"
+            group: "Landslide Map"
         };
 
         var radar_cri = {
@@ -37,7 +50,7 @@ angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
                 format: "image/png",
                 opacity: 1,
             },
-            group: "Open Fire Map"
+            group: "Landslide Map"
         };
 
         var radar_kkn = {
@@ -56,9 +69,26 @@ angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
                 format: "image/png",
                 opacity: 1,
             },
-            group: "Open Fire Map"
+            group: "Landslide Map"
         };
-
+        var basin = {
+            name: 'ขอบเขตลุ่มน้ำ',
+            type: 'wms',
+            visible: true,
+            url: 'http://www3.cgistln.nu.ac.th/geoserver/ows?',
+            layerParams: {
+                layers: 'gistdata:basin_50k',
+                format: 'image/png',
+                transparent: true,
+                CQL_FILTER: "mb_code IN ('09')",
+                zIndex: 3
+            },
+            layerOptions: {
+                format: "image/png",
+                opacity: 1,
+            },
+            group: "Landslide Map"
+        };
         var province = {
             name: 'ขอบเขตจังหวัด',
             type: 'wms',
@@ -75,7 +105,7 @@ angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
                 format: "image/png",
                 opacity: 1,
             },
-            group: "Open Fire Map"
+            group: "Landslide Map"
         };
 
         var amphoe = {
@@ -94,7 +124,7 @@ angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
                 format: "image/png",
                 opacity: 1,
             },
-            group: "Open Fire Map"
+            group: "Landslide Map"
         };
 
         var tambon = {
@@ -113,7 +143,7 @@ angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
                 format: "image/png",
                 opacity: 1,
             },
-            group: "Open Fire Map"
+            group: "Landslide Map"
         };
 
         var village = {
@@ -132,7 +162,7 @@ angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
                 format: "image/png",
                 opacity: 1,
             },
-            group: "Open Fire Map"
+            group: "Landslide Map"
         };
         var lscls_mod1 = {
             name: 'พืนที่เสี่ยงดินถล่ม(MOD1)',
@@ -144,13 +174,33 @@ angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
                 format: 'image/png',
                 attribution: '&copy; <a href="http://www.gistnu.com">GISTNU</a>',
                 transparent: true,
+                opacity: 0.7,
                 zIndex: 1
             },
             layerOptions: {
                 format: "image/png",
                 opacity: 1,
             },
-            group: "Open Fire Map"
+            group: "Landslide Map"
+        };
+        var lscls_mod2 = {
+            name: 'พืนที่เสี่ยงดินถล่ม(MOD2)',
+            type: 'wms',
+            visible: true,
+            url: 'http://www3.cgistln.nu.ac.th/geoserver/ows?',
+            layerParams: {
+                layers: 'lsnanbasin:mod2',
+                format: 'image/png',
+                attribution: '&copy; <a href="http://www.gistnu.com">GISTNU</a>',
+                transparent: true,
+                opacity: 0.7,
+                zIndex: 1
+            },
+            layerOptions: {
+                format: "image/png",
+                opacity: 1,
+            },
+            group: "Landslide Map"
         };
         var rain_haii = {
             name: 'ปริมาณฝน: สสนก.',
@@ -168,15 +218,28 @@ angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
                 format: "image/png",
                 opacity: 1,
             },
-            group: "Open Fire Map"
+            group: "Landslide Map"
         };
-
-        angular.extend($scope, {
-            center: {
-                lat: 17.451,
-                lng: 100.570,
-                zoom: 7
+        var dem = {
+            name: 'ข้อมูลระดับความสูงเชิงเลข',
+            type: 'wms',
+            visible: true,
+            url: 'http://www3.cgistln.nu.ac.th/geoserver/ows?',
+            layerParams: {
+                layers: 'lsnanbasin:gdem',
+                format: 'image/png',
+                attribution: '&copy; <a href="http://www.gistnu.com">GISTNU</a>',
+                transparent: true,
+                zIndex: 1
             },
+            layerOptions: {
+                format: "image/png",
+                opacity: 1,
+            },
+            group: "Landslide Map"
+        };
+        angular.extend($scope, {
+            center: center,
             layercontrol: {
                 icons: {
                     uncheck: "fa fa-toggle-off",
@@ -186,6 +249,24 @@ angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
 
             layers: {
                 baselayers: {
+                  gphy: {
+                      name: 'Google Terrain',
+                      type: 'xyz',
+                      url: 'http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',
+                      layerOptions: {
+                          subdomains:['mt0','mt1','mt2','mt3'],
+                          continuousWorld: true
+                      }
+                  },
+                    ghyb: {
+                        name: 'Google Hybrid',
+                        type: 'xyz',
+                        url: 'http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',
+                        layerOptions: {
+                            subdomains:['mt0','mt1','mt2','mt3'],
+                            continuousWorld: true
+                        }
+                    },
                   cdb: {
                       name: 'CartoDBMap',
                       type: 'xyz',
@@ -196,16 +277,6 @@ angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
                           continuousWorld: true
                       }
                   },
-                  cycle: {
-                        name: 'OpenCycleMap',
-                        type: 'xyz',
-                        url: 'http://{s}.tile.opencyclemap.org/cycle/{z}/{x}/{y}.png',
-                        layerOptions: {
-                            subdomains: ['a', 'b', 'c'],
-                            attribution: '&copy; <a href="http://www.opencyclemap.org/copyright">OCM</a> &copy; <a href="http://www.openstreetmap.org/copyright">OSM</a>',
-                            continuousWorld: true
-                        }
-                    },
                     osm: {
                         name: 'OpenStreetMap',
                         type: 'xyz',
@@ -218,8 +289,9 @@ angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
                     }
                 },
                 overlays: {
-                    province: province,
+                    basin: basin,
                     lscls_mod1: lscls_mod1,
+                    lscls_mod1: lscls_mod2,
                     rain_haii: rain_haii
                 }
             },
@@ -260,6 +332,14 @@ angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
                 this.layers.overlays.province = province
             },
 
+            //basin
+            removeBasinLayer: function () {
+                delete this.layers.overlays.basin;
+            },
+            addBasinLayer: function () {
+                this.layers.overlays.basin = basin
+            },
+
             //phs radar
             removeRadar_phsLayer: function () {
                 delete this.layers.overlays.radar_phs;
@@ -292,12 +372,28 @@ angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
                 this.layers.overlays.rain_haii = rain_haii
             },
 
+            // dem
+            removeDEMLayer: function () {
+                delete this.layers.overlays.dem;
+            },
+            addDEMLayer: function () {
+                this.layers.overlays.dem = dem
+            },
+
             // landslide risk mod1
             removeLandslide_mod1Layer: function () {
                 delete this.layers.overlays.lscls_mod1;
             },
             addLandslide_mod1Layer: function () {
                 this.layers.overlays.lscls_mod1 = lscls_mod1
+            },
+
+            // landslide risk mod2
+            removeLandslide_mod2Layer: function () {
+                delete this.layers.overlays.lscls_mod2;
+            },
+            addLandslide_mod2Layer: function () {
+                this.layers.overlays.lscls_mod2 = lscls_mod2
             },
 
         })
@@ -308,12 +404,15 @@ angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
             vill: false,
             tambon: false,
             amphoe: false,
-            province: true,
+            province: false,
+            basin: true,
             radar_phs: false,
             radar_cri: false,
             radar_kkn: false,
             rain_haii: true,
-            lscls_mod1: true
+            lscls_mod1: true,
+            lscls_mod2: true,
+            dem: true
         };
 
         $scope.showLayers = function (val) {
@@ -342,6 +441,12 @@ angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
                     $scope.addProvinceLayer();
                 } else {
                     $scope.removeProvinceLayer();
+                }
+            }else if (val == 'basin') {
+                if ($scope.checkboxModel.basin == true) {
+                    $scope.addBasinLayer();
+                } else {
+                    $scope.removeBasinLayer();
                 }
             }else if (val == 'radar_phs') {
                 if ($scope.checkboxModel.radar_phs == true) {
@@ -373,7 +478,41 @@ angular.module('app.controller', ['ui-leaflet', 'ng-echarts'])
                 } else {
                     $scope.removeLandslide_mod1Layer();
                 }
+            }else if (val == 'lscls_mod2') {
+                if ($scope.checkboxModel.lscls_mod2 == true) {
+                    $scope.addLandslide_mod2Layer();
+                } else {
+                    $scope.removeLandslide_mod2Layer();
+                }
+            }else if (val == 'dem') {
+                if ($scope.checkboxModel.dem == true) {
+                    $scope.addDEMLayer();
+                } else {
+                    $scope.removeDEMLayer();
+                }
             }
+        }
+
+        //call json
+        $scope.getWfs = function () {
+            geoService.getWfs()
+                .then(function (response) {
+                    $scope.vills = response.data.features;
+                    $scope.Wfslength = 50;
+                    $scope.totalItems = $scope.Wfslength;
+                    $scope.currentPage = 1;
+                    $scope.numPerPage = 10;
+                })
+        };
+        $scope.getWfs();
+
+
+        $scope.paginate = function (value) {
+            var begin, end, index;
+            begin = ($scope.currentPage - 1) * $scope.numPerPage;
+            end = begin + $scope.numPerPage;
+            index = $scope.vills.indexOf(value);
+            return (begin <= index && index < end);
         }
 
         $scope.barOption = {
